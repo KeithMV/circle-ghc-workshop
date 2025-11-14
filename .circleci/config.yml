@@ -10,7 +10,7 @@ jobs:
           command: npm install
       - run:
           name: Build application
-          command: npm run build
+          command: npm run webpack
       - persist_to_workspace:
           root: .
           paths:
