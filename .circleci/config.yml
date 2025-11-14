@@ -7,34 +7,22 @@ jobs:
       - checkout
   test:
     docker:
-      - image: amazonlinux
+      - image: cimg/python:3.9
     steps:
       - checkout
       - run:
-          name: Get Pip
+          name: Install dependencies
           command: |
-            curl -O https://bootstrap.pypa.io/get-pip.py && python get-pip.py
+            pip install pyyaml
       - run:
-          name: Install Python dependencies
+          name: Validate CloudFormation templates
           command: |
-            pip install awscli pyyaml
-      - run:
-          name: Validate CFN templates via AWS CLI
-          command: |
-            echo "Checking CloudFormation template syntax..."
-            for i in cfn/*.yml; do
-              echo "Validating $i"
-              if [ -f "$i" ]; then
-                echo "✓ Template $i exists and is readable"
-                # Basic YAML syntax check
-                python -c "import yaml; yaml.safe_load(open('$i'))"
-                echo "✓ Template $i has valid YAML syntax"
-              else
-                echo "✗ Template $i not found"
-                exit 1
-              fi
+            echo "Validating CloudFormation templates..."
+            for template in cfn/*.yml; do
+              echo "Checking $template"
+              python -c "import yaml; yaml.safe_load(open('$template')); print('✓ Valid YAML syntax')"
             done
-            echo "All templates passed basic validation!"
+            echo "All templates validated successfully!"
   deploy:
     docker:
       - image: amazonlinux
