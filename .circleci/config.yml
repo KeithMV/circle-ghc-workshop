@@ -2,25 +2,44 @@ version: 2
 jobs:
   build:
     docker:
-      - image: amazonlinux
+      - image: cimg/node:16
     steps:
       - checkout
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Build application
+          command: npm run build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build/
+            - node_modules/
   test:
     docker:
       - image: cimg/python:3.9
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - run:
-          name: Basic test
+          name: Install PyYAML
+          command: pip install pyyaml
+      - run:
+          name: Validate CloudFormation templates
           command: |
-            echo "Test stage running..."
-            echo "Python version:"
-            python --version
-            echo "Current directory:"
-            pwd
-            echo "Files:"
-            ls -la
-            echo "Test completed successfully!"
+            echo "Validating CloudFormation templates..."
+            for template in cfn/*.yml; do
+              echo "Checking $template"
+              python -c "import yaml; yaml.safe_load(open('$template')); print('✓ Valid YAML')"
+            done
+            echo "All templates validated!"
+      - run:
+          name: Check build artifacts
+          command: |
+            echo "Checking build output:"
+            ls -la build/ || echo "No build directory found"
   deploy:
     docker:
       - image: amazonlinux
